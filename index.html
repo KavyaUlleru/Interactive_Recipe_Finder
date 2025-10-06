@@ -1,34 +1,610 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Interactive Recipe Finder</title>
+  <title>CulinaryCraft | Smart Interactive Recipe Finder & Zero-Waste Pantry</title>
+  <meta name="description" content="Discover delicious recipes using ingredients you already have. Reduce kitchen food waste, save money, scale servings, track grocery lists, and cook with smart step-by-step guidance." />
+  <meta name="theme-color" content="#10b981" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Main Stylesheet -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Interactive Recipe Finder</h1>
-    <p>Enter the ingredients you have and get recipe ideas instantly.</p>
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Header & Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+            <line x1="6" y1="17" x2="18" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Culinary<span>Craft</span></h1>
+          <p class="brand-badge">Smart Pantry & Recipe Finder</p>
+        </div>
+      </div>
+
+      <nav class="nav-actions">
+        <!-- Quick Kitchen Timer Trigger -->
+        <button id="timer-toggle-btn" class="nav-btn" title="Open Kitchen Timer" aria-label="Kitchen Timer">
+          <span class="btn-icon">⏱️</span>
+          <span class="btn-text">Timer</span>
+          <span id="active-timer-indicator" class="active-badge hidden">Running</span>
+        </button>
+
+        <!-- Grocery List Trigger -->
+        <button id="grocery-toggle-btn" class="nav-btn" title="View Grocery List" aria-label="Grocery Shopping List">
+          <span class="btn-icon">🛒</span>
+          <span class="btn-text">Grocery</span>
+          <span id="grocery-count-badge" class="count-badge">0</span>
+        </button>
+
+        <!-- Favorites Trigger -->
+        <button id="favorites-toggle-btn" class="nav-btn" title="Saved Favorites" aria-label="Saved Recipes">
+          <span class="btn-icon">❤️</span>
+          <span class="btn-text">Saved</span>
+          <span id="favorites-count-badge" class="count-badge">0</span>
+        </button>
+
+        <!-- Zero Waste Guide Trigger -->
+        <button id="guide-toggle-btn" class="nav-btn" title="Zero-Waste Cooking Tips" aria-label="Cooking Guide">
+          <span class="btn-icon">🌱</span>
+          <span class="btn-text">Waste Tips</span>
+        </button>
+
+        <!-- Settings / API Trigger -->
+        <button id="settings-toggle-btn" class="nav-btn" title="App Settings & API Source" aria-label="Settings">
+          <span class="btn-icon">⚙️</span>
+          <span class="btn-text">API</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
+          <span class="theme-icon light-icon" aria-hidden="true">☀️</span>
+          <span class="theme-icon dark-icon" aria-hidden="true">🌙</span>
+        </button>
+      </nav>
+    </div>
   </header>
 
-  <main>
-    <section id="search-section">
-      <input
-        type="text"
-        id="ingredient-input"
-        placeholder="e.g., tomato, cheese, pasta"
-      />
-      <button id="search-btn">Find Recipes</button>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-pill">
+        <span class="sparkle-icon">✨</span> Zero Food Waste • Maximum Flavor
+      </div>
+      <h2 class="hero-heading">What’s in your kitchen right now?</h2>
+      <p class="hero-subheading">
+        Add the ingredients sitting in your fridge or pantry. Our intelligent matching engine calculates the best recipes you can make right away with minimum groceries to buy.
+      </p>
+
+      <!-- Pantry Input Station -->
+      <div class="pantry-box">
+        <div class="input-row">
+          <div class="autocomplete-wrapper">
+            <span class="input-leading-icon" aria-hidden="true">🔍</span>
+            <input
+              type="text"
+              id="ingredient-input"
+              class="ingredient-input"
+              placeholder="Type an ingredient (e.g., tomato, cheese, chicken, garlic)..."
+              autocomplete="off"
+              aria-label="Enter ingredient"
+            />
+            <div id="autocomplete-list" class="autocomplete-dropdown hidden" role="listbox"></div>
+          </div>
+          <button id="add-ingredient-btn" class="btn btn-primary" aria-label="Add ingredient">
+            <span class="btn-icon">+</span>
+            <span>Add</span>
+          </button>
+        </div>
+
+        <!-- Pantry Controls Toolbar -->
+        <div class="pantry-toolbar">
+          <div class="pantry-summary">
+            <span id="pantry-count-text">0 ingredients selected</span>
+          </div>
+          <div class="pantry-buttons">
+            <button id="surprise-pantry-btn" class="btn btn-secondary btn-sm" title="Pick random ingredients to test">
+              🎲 Surprise Pantry
+            </button>
+            <button id="clear-pantry-btn" class="btn btn-ghost btn-sm" title="Remove all ingredients">
+              🧹 Clear All
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected Ingredients Tags Tray -->
+        <div id="selected-ingredients-tray" class="ingredients-tray" aria-live="polite">
+          <span class="tray-placeholder">Your pantry is empty. Click any quick staple below or type ingredients above!</span>
+        </div>
+
+        <!-- Quick Staples Section -->
+        <div class="quick-staples">
+          <div class="staples-label">Quick Add Staples:</div>
+          <div id="staples-pills" class="staples-pills"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main App Layout: Filters & Recipe Grid -->
+  <main class="main-container">
+    <!-- Filter Bar Controls -->
+    <section class="controls-card" aria-label="Filter and sort recipes">
+      <div class="filters-header">
+        <div class="search-filter-wrapper">
+          <span class="search-icon" aria-hidden="true">🔎</span>
+          <input
+            type="text"
+            id="recipe-search-input"
+            class="recipe-search-input"
+            placeholder="Filter recipes by name or keyword..."
+            aria-label="Search recipes"
+          />
+          <button id="clear-search-btn" class="clear-search-btn hidden" aria-label="Clear search">✕</button>
+        </div>
+
+        <div class="filter-controls-right">
+          <!-- Meal Type Filter -->
+          <div class="select-group">
+            <label for="meal-type-select" class="control-label">Meal:</label>
+            <select id="meal-type-select" class="custom-select">
+              <option value="all">All Meals</option>
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Dinner">Dinner</option>
+            </select>
+          </div>
+
+          <!-- Max Time Filter -->
+          <div class="select-group">
+            <label for="time-filter-select" class="control-label">Time:</label>
+            <select id="time-filter-select" class="custom-select">
+              <option value="all">Any Time</option>
+              <option value="15">⚡ Under 15m</option>
+              <option value="25">⏱️ Under 25m</option>
+              <option value="40">⏳ Under 40m</option>
+            </select>
+          </div>
+
+          <!-- Sort Order -->
+          <div class="select-group">
+            <label for="sort-select" class="control-label">Sort:</label>
+            <select id="sort-select" class="custom-select">
+              <option value="match-desc">⭐ Best Pantry Match</option>
+              <option value="missing-asc">🛒 Fewest Missing Items</option>
+              <option value="time-asc">⚡ Fastest Cook Time</option>
+              <option value="rating-desc">🏆 Highest Rated</option>
+              <option value="calories-asc">🥗 Lowest Calories</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dietary Tags Filter Bar -->
+      <div class="dietary-filter-bar">
+        <span class="dietary-label">Dietary:</span>
+        <div id="dietary-pills" class="dietary-pills">
+          <button class="diet-pill active" data-diet="all">All Diets</button>
+          <button class="diet-pill" data-diet="Vegetarian">🥦 Vegetarian</button>
+          <button class="diet-pill" data-diet="Vegan">🌱 Vegan</button>
+          <button class="diet-pill" data-diet="Gluten-Free">🌾 Gluten-Free</button>
+          <button class="diet-pill" data-diet="Low-Carb">🥑 Low-Carb</button>
+          <button class="diet-pill" data-diet="High-Protein">🍗 High-Protein</button>
+        </div>
+
+        <div class="perfect-match-toggle-wrap">
+          <label class="toggle-switch">
+            <input type="checkbox" id="perfect-match-toggle" />
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-text">100% Ready Only</span>
+        </div>
+      </div>
     </section>
 
-    <section id="recipes" class="recipe-grid"></section>
+    <!-- Results Status Bar -->
+    <section class="results-meta-bar">
+      <div class="results-stats">
+        <span id="results-count" class="results-count">Showing 0 recipes</span>
+        <span id="results-highlight" class="results-highlight"></span>
+      </div>
+
+      <div class="view-options">
+        <button id="view-grid-btn" class="view-btn active" title="Grid View" aria-label="Grid view">⊞</button>
+        <button id="view-list-btn" class="view-btn" title="Compact List View" aria-label="List view">☰</button>
+      </div>
+    </section>
+
+    <!-- Recipe Results Grid -->
+    <section id="recipes" class="recipe-grid" aria-live="polite">
+      <!-- Recipe cards injected here via JS -->
+    </section>
+
+    <!-- Empty State Container -->
+    <div id="empty-state" class="empty-state hidden">
+      <div class="empty-icon">🍳</div>
+      <h3 class="empty-title">No matching recipes found</h3>
+      <p class="empty-desc">Try clearing some dietary filters, choosing other ingredients, or clicking "Surprise Pantry" to see recipe suggestions.</p>
+      <button id="reset-filters-btn" class="btn btn-secondary">Reset Filters</button>
+    </div>
+
+    <!-- Zero-Waste Kitchen Impact Widget -->
+    <section class="waste-impact-banner">
+      <div class="waste-icon">🌿</div>
+      <div class="waste-info">
+        <h3>Cook Smarter, Waste Less</h3>
+        <p>Using pantry ingredients before they spoil saves an average household <strong>$1,500/year</strong> and diverts greenhouse gases. Check our zero-waste chef substitution tips in each recipe!</p>
+      </div>
+      <button id="banner-tips-btn" class="btn btn-outline-white">Explore Waste Tips</button>
+    </section>
   </main>
 
-  <footer>
-    <p>© 2025 Interactive Recipe Finder</p>
+  <!-- Recipe Detail Modal -->
+  <div id="recipe-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-recipe-title">
+    <div class="modal-card">
+      <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">✕</button>
+
+      <div class="modal-hero">
+        <img id="modal-image" src="" alt="Recipe image" class="modal-hero-img" />
+        <div class="modal-hero-overlay">
+          <div class="modal-badges-row">
+            <span id="modal-match-badge" class="match-badge">100% Match</span>
+            <span id="modal-cuisine-badge" class="meta-tag">Italian</span>
+            <span id="modal-meal-badge" class="meta-tag">Dinner</span>
+          </div>
+          <h2 id="modal-recipe-title" class="modal-title">Spaghetti Aglio e Olio</h2>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Quick Meta Row -->
+        <div class="modal-stats-grid">
+          <div class="stat-box">
+            <span class="stat-icon">⏱️</span>
+            <div>
+              <div class="stat-label">Cook Time</div>
+              <div id="modal-cook-time" class="stat-value">12 mins</div>
+            </div>
+          </div>
+          <div class="stat-box">
+            <span class="stat-icon">⚡</span>
+            <div>
+              <div class="stat-label">Difficulty</div>
+              <div id="modal-difficulty" class="stat-value">Easy</div>
+            </div>
+          </div>
+          <div class="stat-box">
+            <span class="stat-icon">🥗</span>
+            <div>
+              <div class="stat-label">Calories</div>
+              <div id="modal-calories" class="stat-value">420 kcal</div>
+            </div>
+          </div>
+          <div class="stat-box">
+            <span class="stat-icon">⭐</span>
+            <div>
+              <div class="stat-label">Rating</div>
+              <div id="modal-rating" class="stat-value">4.9 / 5.0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <p id="modal-description" class="modal-desc"></p>
+
+        <!-- Nutrition & Macros Bar -->
+        <div class="nutrition-card">
+          <div class="nutrition-header">
+            <h4>Estimated Nutrition Per Serving</h4>
+          </div>
+          <div class="nutrition-pills">
+            <div class="macro-pill"><span class="macro-label">Protein:</span> <strong id="modal-protein">12g</strong></div>
+            <div class="macro-pill"><span class="macro-label">Carbs:</span> <strong id="modal-carbs">62g</strong></div>
+            <div class="macro-pill"><span class="macro-label">Fats:</span> <strong id="modal-fat">14g</strong></div>
+          </div>
+        </div>
+
+        <!-- Servings Scaler -->
+        <div class="servings-bar">
+          <span class="servings-title">Adjust Servings:</span>
+          <div class="servings-stepper">
+            <button id="servings-minus-btn" class="stepper-btn" aria-label="Decrease servings">-</button>
+            <span id="modal-servings-count" class="servings-count">2</span>
+            <button id="servings-plus-btn" class="stepper-btn" aria-label="Increase servings">+</button>
+          </div>
+          <span class="servings-hint">Amounts recalculate automatically</span>
+        </div>
+
+        <!-- Ingredients Section -->
+        <div class="modal-section">
+          <div class="section-title-row">
+            <h3 class="section-title">Ingredients Checklist</h3>
+            <button id="modal-add-all-missing-btn" class="btn btn-secondary btn-sm">
+              🛒 Add Missing to Grocery List
+            </button>
+          </div>
+
+          <div class="ingredient-split-grid">
+            <!-- In Pantry -->
+            <div class="ingredient-column in-pantry-col">
+              <div class="column-header">
+                <span class="indicator-dot green"></span>
+                <h4>In Your Pantry (<span id="modal-have-count">0</span>)</h4>
+              </div>
+              <ul id="modal-have-ingredients" class="checklist-items"></ul>
+            </div>
+
+            <!-- Missing -->
+            <div class="ingredient-column missing-col">
+              <div class="column-header">
+                <span class="indicator-dot orange"></span>
+                <h4>Need to Buy (<span id="modal-missing-count">0</span>)</h4>
+              </div>
+              <ul id="modal-missing-ingredients" class="checklist-items"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step by Step Instructions -->
+        <div class="modal-section">
+          <h3 class="section-title">Step-by-Step Cooking Guide</h3>
+          <p class="section-subtitle">Check off each step as you complete it. Use in-step timer buttons for precision!</p>
+          <ol id="modal-instructions" class="instructions-list"></ol>
+        </div>
+
+        <!-- Zero Waste Chef Tip & Substitutions -->
+        <div class="chef-tip-box">
+          <div class="tip-header">
+            <span class="tip-icon">👨‍🍳</span>
+            <h4>Chef's Zero-Waste Tip & Common Substitutions</h4>
+          </div>
+          <p id="modal-waste-tip" class="tip-text"></p>
+          <div id="modal-substitutions-wrap" class="substitutions-wrap"></div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="modal-actions-footer">
+          <button id="modal-favorite-btn" class="btn btn-outline">
+            <span id="modal-favorite-icon">🤍</span> <span id="modal-favorite-text">Save Recipe</span>
+          </button>
+          <button id="modal-print-btn" class="btn btn-outline" title="Print recipe">
+            🖨️ Print Recipe
+          </button>
+          <button id="modal-start-timer-btn" class="btn btn-primary">
+            ⏱️ Launch Timer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grocery Shopping List Drawer -->
+  <div id="grocery-drawer" class="drawer-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="grocery-drawer-title">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <span class="drawer-icon">🛒</span>
+          <h3 id="grocery-drawer-title">Grocery Shopping List</h3>
+        </div>
+        <button id="grocery-close-btn" class="drawer-close-btn" aria-label="Close grocery drawer">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <!-- Add Custom Item Input -->
+        <div class="grocery-input-row">
+          <input type="text" id="grocery-custom-input" class="grocery-input" placeholder="Add custom item (e.g. olive oil, salt)..." />
+          <button id="grocery-add-custom-btn" class="btn btn-primary btn-sm">+ Add</button>
+        </div>
+
+        <!-- Grocery Actions Bar -->
+        <div class="grocery-actions-bar">
+          <button id="grocery-copy-btn" class="btn btn-ghost btn-sm" title="Copy list to clipboard">📋 Copy List</button>
+          <button id="grocery-clear-completed-btn" class="btn btn-ghost btn-sm">Clear Checked</button>
+          <button id="grocery-clear-all-btn" class="btn btn-ghost btn-sm">Clear All</button>
+        </div>
+
+        <!-- Grocery Items List -->
+        <ul id="grocery-items-list" class="grocery-items-list">
+          <!-- Injected dynamically -->
+        </ul>
+
+        <div id="grocery-empty" class="drawer-empty hidden">
+          <span class="drawer-empty-icon">🧺</span>
+          <p>Your grocery list is empty.</p>
+          <small>Missing ingredients from recipes will appear here!</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Favorites Drawer -->
+  <div id="favorites-drawer" class="drawer-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="favorites-drawer-title">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <span class="drawer-icon">❤️</span>
+          <h3 id="favorites-drawer-title">Saved Favorite Recipes</h3>
+        </div>
+        <button id="favorites-close-btn" class="drawer-close-btn" aria-label="Close saved drawer">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <ul id="favorites-list" class="favorites-list">
+          <!-- Injected dynamically -->
+        </ul>
+
+        <div id="favorites-empty" class="drawer-empty hidden">
+          <span class="drawer-empty-icon">🤍</span>
+          <p>No saved recipes yet.</p>
+          <small>Click the heart icon on any recipe card to save it here for quick access!</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Floating Kitchen Timer Drawer/Modal -->
+  <div id="timer-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="timer-modal-title">
+    <div class="modal-card timer-card">
+      <button id="timer-close-btn" class="modal-close-btn" aria-label="Close timer">✕</button>
+      <div class="timer-header">
+        <h3 id="timer-modal-title">⏱️ Kitchen Cooking Timer</h3>
+        <p>Set a hands-free alert so your ingredients cook to perfection.</p>
+      </div>
+
+      <div class="timer-display-wrap">
+        <div id="timer-display" class="timer-display">00:00</div>
+        <div id="timer-label" class="timer-label">Ready</div>
+      </div>
+
+      <!-- Quick Preset Buttons -->
+      <div class="timer-presets">
+        <button class="preset-btn" data-seconds="60">+1m</button>
+        <button class="preset-btn" data-seconds="180">+3m</button>
+        <button class="preset-btn" data-seconds="300">+5m</button>
+        <button class="preset-btn" data-seconds="600">+10m</button>
+        <button class="preset-btn" data-seconds="900">+15m</button>
+      </div>
+
+      <!-- Timer Controls -->
+      <div class="timer-controls">
+        <button id="timer-start-btn" class="btn btn-primary btn-lg">Start</button>
+        <button id="timer-pause-btn" class="btn btn-secondary btn-lg" disabled>Pause</button>
+        <button id="timer-reset-btn" class="btn btn-ghost btn-lg">Reset</button>
+      </div>
+
+      <div class="sound-toggle-row">
+        <label>
+          <input type="checkbox" id="timer-sound-checkbox" checked />
+          Play chime sound when finished
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zero-Waste Guide Modal -->
+  <div id="guide-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
+    <div class="modal-card guide-card">
+      <button id="guide-close-btn" class="modal-close-btn" aria-label="Close guide">✕</button>
+      <div class="guide-header">
+        <span class="guide-header-icon">🌱</span>
+        <h3 id="guide-modal-title">The Zero-Waste Kitchen Blueprint</h3>
+        <p>Proven culinary strategies to keep food fresh, stretch your grocery budget, and cook sustainably.</p>
+      </div>
+
+      <div class="guide-body">
+        <div class="guide-grid">
+          <div class="guide-item">
+            <div class="guide-item-icon">🥬</div>
+            <h4>Reviving Wilted Greens</h4>
+            <p>Submerge limp celery, carrots, spinach, or lettuce in a bowl of ice water for 15 minutes. Osmosis crisps their cell walls right back up!</p>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-icon">🍞</div>
+            <h4>Stale Bread Transformations</h4>
+            <p>Never toss dry bread. Pulse in a blender for crispy homemade breadcrumbs, cube for buttery croutons, or make French toast and bread pudding.</p>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-icon">🧀</div>
+            <h4>Freezing Hard Cheese Rinds</h4>
+            <p>Save hard parmesan and pecorino rinds in a freezer bag. Drop them into simmering pasta sauces and vegetable soups for unmatched savory umami depth.</p>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-icon">🍅</div>
+            <h4>Freezing Tomato Paste & Herbs</h4>
+            <p>Leftover tomato paste or fresh chopped herbs can be portioned into ice cube trays with a drizzle of olive oil, frozen, and dropped into future sauces.</p>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-icon">🍌</div>
+            <h4>Browning Bananas & Soft Fruit</h4>
+            <p>Overripe bananas are at peak sweetness. Peel and freeze them for smoothies or mash directly into quick 3-ingredient banana pancakes.</p>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-icon">🥔</div>
+            <h4>Root Vegetable Longevity</h4>
+            <p>Store potatoes and onions separately in cool, dark, ventilated spaces. Keeping them together produces ethylene gas which causes rapid sprouting.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & API Modal -->
+  <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-card settings-card">
+      <button id="settings-close-btn" class="modal-close-btn" aria-label="Close settings">✕</button>
+      <div class="settings-header">
+        <h3 id="settings-modal-title">⚙️ App Data Source & Settings</h3>
+        <p>Configure online/offline recipe fetching engines.</p>
+      </div>
+
+      <div class="settings-body">
+        <div class="settings-group">
+          <label class="settings-label">Primary Database Mode:</label>
+          <div class="mode-indicator active">
+            <span class="mode-status-dot"></span>
+            <div>
+              <strong>Built-in Offline Chef Catalog (Active)</strong>
+              <p>Contains 25+ chef-tested, high-definition recipes with zero external API dependencies or rate limits. Runs 100% offline!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <label for="spoonacular-key-input" class="settings-label">Optional Spoonacular API Key:</label>
+          <input
+            type="text"
+            id="spoonacular-key-input"
+            class="settings-input"
+            placeholder="Paste your Spoonacular API key here (optional)..."
+          />
+          <small class="settings-help">If provided, the app can fetch external recipes live when online. If omitted, the app smoothly uses the offline catalog.</small>
+        </div>
+
+        <div class="settings-actions">
+          <button id="save-settings-btn" class="btn btn-primary">Save Settings</button>
+          <button id="reset-pantry-data-btn" class="btn btn-ghost text-danger">Reset All Local Storage Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-branding">
+        <div class="brand-title">Culinary<span>Craft</span></div>
+        <p>Interactive Recipe Finder & Zero-Waste Culinary Engine • Web Development Internship Project</p>
+      </div>
+
+      <div class="footer-tags">
+        <span class="tech-tag">HTML5 Semantic</span>
+        <span class="tech-tag">CSS3 Custom Properties</span>
+        <span class="tech-tag">Vanilla ES6+ JavaScript</span>
+        <span class="tech-tag">Web Audio API</span>
+        <span class="tech-tag">Zero Dependencies</span>
+      </div>
+
+      <div class="footer-copy">
+        <p>© 2025 CulinaryCraft. Designed for sustainability, culinary inspiration, and smart pantry management.</p>
+      </div>
+    </div>
   </footer>
 
+  <!-- Scripts -->
+  <script src="recipes-data.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
